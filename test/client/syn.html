@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="socket.io.js"></script>
+    <script>
+        function test() {
+            var socket = io.connect("http://127.0.0.1:8000", { 'reconnect': false });
+            socket.emit("login", {name: "hello", password: "world"});
+            socket.on("loginSuccess", function (url) {
+
+                _url = url;
+
+                if(url) {
+                    var socketGame = io.connect(url);
+                    socketGame.on('connect_failed', function(data) {
+console.log("connect_failed");
+                        socket.emit("connectionTimeout", {url: _url});
+                    });
+                    socketGame.on('error', function(data) {
+console.log("error");
+                        socketGame.close();
+                        socket.emit("connectionTimeout", {url: _url});
+                    });
+                    socketGame.emit("game");
+                    socketGame.on("gameSuccess", function (resData) {
+console.log(resData);
+                        socket.close();
+                        socketGame.close();
+                    });
+                }
+            });
+            socket.on("reLogin", function () {
+                socket.emit("login", {name: "hello", password: "world"});
+            });
+            socket.on("loginError", function (err) {
+
+                socket.close();
+console.log("loginError " + err);
+            });
+        }
+        for(var i=0;i<500;i++) {
+            test();
+        }
+    </script>
+</head>
+<body>
+<h1 id="content"></h1>
+</body>
+</html>
